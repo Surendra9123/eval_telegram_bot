@@ -44,7 +44,7 @@ bot.start()
 async def progress(current, total):
     print(f"{current * 100 / total:.1f}%")
 
-@app.on_message(filters.text & filters.regex("^#gpt")) #& (filters.user(usrs) | filters.channel)
+@app.on_message(filters.text & filters.regex("^#gpt")) #& (filters.create(lambda _ , __ , m : m.chat.id in usrs) | filters.channel)
 async def chatgpt(c,m):
  m.text = eval(f'f"""{m.text}"""')
  if m.text.split(" ")[1] == "img":
@@ -64,10 +64,10 @@ async def chatgpt(c,m):
    else:
     reply=await m.reply("📝 Generating...")
     try:
-     response = await client.chat.completions.create(messages=[{"role": "user","content": " ".join(m.text.split(" ")[1:])}],model="gpt-4")
+     response = await client.chat.completions.create(messages=[{"role": "user","content": " ".join(m.text.split(" ")[1:])}],model="gpt-3.5-turbo")
     except Exception as e:
      return await reply.edit(e.message)
-    answer = "**Que. :** `" + " ".join(m.text.split(" ")[1:]) + "`\n\n**Result :** " + response.choices[0].message.content
+   answer = "**Que. :** `" + " ".join(m.text.split(" ")[1:]) + "`\n\n**Result :** " + response.choices[0].message.content
    if len(answer) > 4090:
     return await reply.edit("📝 Result is exceed 4096 character limit..")
    await reply.edit(answer)
@@ -85,7 +85,7 @@ async def ping(_, m):
     
 
 
-@app.on_message(filters.command("eval",prefixes=[".","!","/"]) & (filters.user(usrs) | filters.channel))
+@app.on_message(filters.command("eval",prefixes=[".","!","/"]) & (filters.create(lambda _ , __ , m : m.chat.id in usrs) | filters.channel))
 async def pm(client,message):
   global c,m,r
   c,m,r = client,message,message.reply_to_message
@@ -111,7 +111,7 @@ async def pm(client,message):
      await m.reply_document("Result.txt")
    except:
      return
-@app.on_edited_message(filters.command("eval",prefixes=[".","!","/"]) & (filters.user(usrs) | filters.channel))
+@app.on_edited_message(filters.command("eval",prefixes=[".","!","/"]) & (filters.create(lambda _ , __ , m : m.chat.id in usrs) | filters.channel))
 async def edit(c,m):
   await pm(c,m)
 
