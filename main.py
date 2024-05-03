@@ -32,7 +32,7 @@ from openai import AsyncOpenAI
 import logging
 logging.basicConfig(level=logging.INFO)
 
-
+evall = True
 app = Client("spider",api_id,api_hash,workers=50) #pyrogram userbot client 
 bot = Client("spider_bot",api_id,api_hash,bot_token=bot_token) # pyrogram bot client 
 ptb = Application.builder().token(bot_token).concurrent_updates(8).connection_pool_size(16).build() #python-telegram-bot client 
@@ -44,8 +44,10 @@ bot.start()
 async def progress(current, total):
     print(f"{current * 100 / total:.1f}%")
 
-@app.on_message(filters.text & filters.regex("^#gpt")) #& (filters.create(lambda _ , __ , m : m.chat.id in usrs) | filters.channel)
+@app.on_message(filters.text & filters.regex("^#gpt")) #& (filters.create(lambda _ , __ , m : m.from_user.id in (usrs + ["me",owner])) | filters.channel)
 async def chatgpt(c,m):
+ if m.text == "#gpt":
+   return await m.edit("👀 Question not mentioned!") if (m.from_user.id == c.me.id) else await m.reply("👀 Question not mentioned!")
  m.text = eval(f'f"""{m.text}"""')
  if m.text.split(" ")[1] == "img":
   if m.from_user.id == c.me.id:
@@ -63,9 +65,9 @@ async def chatgpt(c,m):
     reply=await m.edit("📝 Generating...")
    else:
     reply=await m.reply("📝 Generating...")
-    try:
+   try:
      response = await client.chat.completions.create(messages=[{"role": "user","content": " ".join(m.text.split(" ")[1:])}],model="gpt-3.5-turbo")
-    except Exception as e:
+   except Exception as e:
      return await reply.edit(e.message)
    answer = "**Que. :** `" + " ".join(m.text.split(" ")[1:]) + "`\n\n**Result :** " + response.choices[0].message.content
    if len(answer) > 4090:
@@ -82,10 +84,19 @@ async def ping(_, m):
     reply = await m.edit("...")
     delta_ping = time.time() - start
     await reply.edit_text(f"**Pong!** `{delta_ping * 1000:.3f} ms`")
-    
+
+@app.on_message(filters.command("change",prefixes=[".","!","/"]) & (filters.create(lambda _ , __ , m : m.from_user.id in (usrs + ["me",owner])) | filters.channel))
+async def charger(c,m):
+ global evall
+ if evall:
+  evall = False
+  return await m.edit("Changed to False")
+ else:
+  evall = True
+  return await m.edit("Changed to True")   
 
 
-@app.on_message(filters.command("eval",prefixes=[".","!","/"]) & (filters.create(lambda _ , __ , m : m.chat.id in usrs) | filters.channel))
+@app.on_message(filters.command("eval",prefixes=[".","!","/"]) & (filters.create(lambda _ , __ , m : m.from_user.id in (usrs + ["me",owner])) | filters.channel))
 async def pm(client,message):
   global c,m,r
   c,m,r = client,message,message.reply_to_message
@@ -95,10 +106,10 @@ async def pm(client,message):
   except Exception as e:
     vc = str(e)
   try:
-    await m.edit(f"""Code : `{text}`\n\nResult : ```json\n{str(vc)}```""",disable_web_page_preview=True,parse_mode=pyrogram.enums.ParseMode.MARKDOWN)
+    await m.edit(f"""**Input :** `{m.text}`\n\n**Output :** ```json\n{str(vc)}```""",disable_web_page_preview=True,parse_mode=pyrogram.enums.ParseMode.MARKDOWN)
   except Exception as e:
    try:
-    await m.edit(f"""Code : `{text}`\n\nResult : ```json\n{str(e)}```""",disable_web_page_preview=True,parse_mode=pyrogram.enums.ParseMode.MARKDOWN)
+    await m.edit(f"""**Input :** `{m.text}`\n\n**Output :** ```json\n{str(e)}```""",disable_web_page_preview=True,parse_mode=pyrogram.enums.ParseMode.MARKDOWN)
    except:
      pass
    with open("Result.txt" , "w") as g:
@@ -111,9 +122,11 @@ async def pm(client,message):
      await m.reply_document("Result.txt")
    except:
      return
-@app.on_edited_message(filters.command("eval",prefixes=[".","!","/"]) & (filters.create(lambda _ , __ , m : m.chat.id in usrs) | filters.channel))
+ 
+@app.on_edited_message(filters.command("eval",prefixes=[".","!","/"]) & (filters.create(lambda _ , __ , m : m.from_user.id in (usrs + ["me",owner])) | filters.channel))
 async def edit(c,m):
   await pm(c,m)
+
 
 @app.on_message(filters.command("del",prefixes=[".","!","/"]) & (filters.user("me") | filters.channel))
 async def delete(c,m):
@@ -123,5 +136,7 @@ async def delete(c,m):
   except:
    return
 
+
+app.run()
 
 app.run()
