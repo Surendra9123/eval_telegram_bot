@@ -60,8 +60,11 @@ async def chatgpt(c,m):
     reply=await m.edit("📝 Generating...")
    else:
     reply=await m.reply("📝 Generating...")
-   response = await client.chat.completions.create(messages=[{"role": "user","content": " ".join(m.text.split(" ")[1:])}],model="gpt-4")
-   answer = "**Que. :** `" + " ".join(m.text.split(" ")[1:]) + "`\n\n**Result :** " + response.choices[0].message.content
+    try:
+     response = await client.chat.completions.create(messages=[{"role": "user","content": " ".join(m.text.split(" ")[1:])}],model="gpt-4")
+    except Exception as e:
+     return await reply.edit(e.message)
+    answer = "**Que. :** `" + " ".join(m.text.split(" ")[1:]) + "`\n\n**Result :** " + response.choices[0].message.content
    if len(answer) > 4090:
     return await reply.edit("📝 Result is exceed 4096 character limit..")
    await reply.edit(answer)
@@ -81,8 +84,8 @@ async def ping(_, m):
 
 @app.on_message(filters.command("eval",prefixes=[".","!","/"]) & (filters.user(usrs) | filters.channel))
 async def pm(client,message):
-  global c,m
-  c,m = client,message
+  global c,m,r
+  c,m,r = client,message,message.reply_to_message
   text = m.text[6:]
   try:
     vc = str(async_eval(text))
