@@ -29,6 +29,9 @@ import wget
 import speedtest
 from openai import AsyncOpenAI
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 
 app = Client("spider",api_id,api_hash,workers=50) #pyrogram userbot client 
 bot = Client("spider_bot",api_id,api_hash,bot_token=bot_token) # pyrogram bot client 
